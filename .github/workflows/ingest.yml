@@ -1,0 +1,30 @@
+name: Ingest KB
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Optional note"
+        required: false
+        default: "Manual KB ingestion"
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Ingest
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+        run: npx tsx src/rag/ingest.ts
