@@ -15,7 +15,7 @@ export type Message = {
 
 export async function insertMessage(params: Omit<Message, 'id' | 'created_at'> & { created_at?: string }) {
   const created_at = params.created_at ?? nowIso();
-  const res = await sql<{ id: number }[]>`
+  const res = await sql<{ id: number }>`
     INSERT INTO messages (conversation_id, direction, role, text, created_at, telegram_message_id, model, prompt_tokens, completion_tokens)
     VALUES (${params.conversation_id}, ${params.direction}, ${params.role}, ${params.text}, ${created_at}, ${params.telegram_message_id ?? null}, ${params.model ?? null}, ${params.prompt_tokens ?? null}, ${params.completion_tokens ?? null})
     RETURNING id
@@ -24,11 +24,11 @@ export async function insertMessage(params: Omit<Message, 'id' | 'created_at'> &
 }
 
 export async function getMessagesForConversation(conversation_id: number) {
-  const res = await sql<Message[]>`SELECT * FROM messages WHERE conversation_id=${conversation_id} ORDER BY created_at ASC, id ASC`;
+  const res = await sql<Message>`SELECT * FROM messages WHERE conversation_id=${conversation_id} ORDER BY created_at ASC, id ASC`;
   return res.rows as any as Message[];
 }
 
 export async function findInboundByTelegramId(conversation_id: number, telegram_message_id: string) {
-  const res = await sql<Message[]>`SELECT * FROM messages WHERE conversation_id=${conversation_id} AND direction='in' AND telegram_message_id=${telegram_message_id} LIMIT 1`;
+  const res = await sql<Message>`SELECT * FROM messages WHERE conversation_id=${conversation_id} AND direction='in' AND telegram_message_id=${telegram_message_id} LIMIT 1`;
   return (res.rows[0] as any) as Message | undefined;
 }

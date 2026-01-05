@@ -21,6 +21,6 @@ export async function sendMessage(chat_id: number | string, text: string) {
     body: JSON.stringify({ chat_id, text, parse_mode: 'Markdown' }),
   });
   if (!resp.ok) throw new Error(`Telegram sendMessage failed: ${resp.status}`);
-  const data = await resp.json();
+  const data = await resp.json() as any;
   return data.result?.message_id as number | undefined;
 }
