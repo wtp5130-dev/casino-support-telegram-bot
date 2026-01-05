@@ -1,0 +1,11 @@
+<% layout('layout') -%>
+<h2>Conversation #<%= convo.id %> <% if (convo.rg_flag) { %><span class="badge">RG flag</span><% } %></h2>
+<p class="muted">chat_id: <%= convo.chat_id %> <% if (convo.username) { %> | @<%= convo.username %> <% } %></p>
+<div class="thread">
+  <% messages.forEach(function(m) { %>
+    <div class="bubble <%= m.direction %>">
+      <div class="muted">[<%= m.created_at %>] <%= m.role %> <% if (m.model) { %> — <%= m.model %> <% } %></div>
+      <div><pre style="white-space: pre-wrap; margin:0"><%= m.text %></pre></div>
+    </div>
+  <% }) %>
+</div>
