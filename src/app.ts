@@ -8,7 +8,7 @@ import { moderateText, refusalMessage, shouldAddRGFooter } from './utils/moderat
 import { retrieveTopK } from './rag/retrieve.js';
 import { generateReply } from './openai.js';
 import path from 'path';
-import { ejsLayouts } from './admin/views/_ejsLayoutShim.js';
+import { ejsLayouts } from './admin/views/_ejsLayoutShim';
 import { initSchema } from './db.js';
 
 export const app = express();
