@@ -4,6 +4,7 @@ import pdfParse from 'pdf-parse';
 import { chunkText } from './chunk.js';
 import { embedTexts } from './embed.js';
 import { insertKBChunk } from './store.js';
+import { initSchema } from '../db.js';
 
 const KB_DIR = path.resolve('kb');
 
@@ -38,6 +39,7 @@ async function ingestFile(filePath: string) {
 }
 
 async function main() {
+  await initSchema();
   if (!fs.existsSync(KB_DIR)) {
     throw new Error('kb folder not found');
   }

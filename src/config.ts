@@ -9,7 +9,7 @@ export type AppConfig = {
   ADMIN_PASS: string;
   OPENAI_MODEL: string;
   OPENAI_EMBEDDING_MODEL: string;
-  DATABASE_PATH: string;
+  POSTGRES_URL: string;
 };
 
 function requireEnv(name: string, fallback?: string): string {
@@ -27,5 +27,5 @@ export const config: AppConfig = {
   ADMIN_PASS: requireEnv('ADMIN_PASS', 'change_me'),
   OPENAI_MODEL: requireEnv('OPENAI_MODEL', 'gpt-4.1-mini'),
   OPENAI_EMBEDDING_MODEL: requireEnv('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-large'),
-  DATABASE_PATH: requireEnv('DATABASE_PATH', './data/data.db'),
+  POSTGRES_URL: requireEnv('POSTGRES_URL'),
 };

@@ -1,10 +1,14 @@
-import { db, nowIso } from '../db.js';
+import { sql, nowIso } from '../db.js';
 
-export function insertKBChunk(source: string, chunk_index: number, text: string, embedding: number[]) {
+export async function insertKBChunk(source: string, chunk_index: number, text: string, embedding: number[]) {
   const created_at = nowIso();
   const embedding_json = JSON.stringify(embedding);
-  db.prepare(`INSERT OR REPLACE INTO kb_chunks(source, chunk_index, text, embedding_json, created_at) VALUES(?,?,?,?,?)`)
-    .run(source, chunk_index, text, embedding_json, created_at);
+  await sql`
+    INSERT INTO kb_chunks(source, chunk_index, text, embedding_json, created_at)
+    VALUES(${source}, ${chunk_index}, ${text}, ${embedding_json}, ${created_at})
+    ON CONFLICT (source, chunk_index)
+    DO UPDATE SET text=EXCLUDED.text, embedding_json=EXCLUDED.embedding_json, created_at=EXCLUDED.created_at
+  `;
 }
 
 export type KBChunk = {
@@ -15,8 +19,9 @@ export type KBChunk = {
   embedding_json: string;
 };
 
-export function getAllKBChunks(): KBChunk[] {
-  return db.prepare(`SELECT * FROM kb_chunks`).all() as KBChunk[];
+export async function getAllKBChunks(): Promise<KBChunk[]> {
+  const res = await sql<KBChunk[]>`SELECT id, source, chunk_index, text, embedding_json FROM kb_chunks`;
+  return res.rows as any as KBChunk[];
 }
 
 export function cosineSim(a: number[], b: number[]) {
@@ -30,8 +35,8 @@ export function cosineSim(a: number[], b: number[]) {
   return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-8);
 }
 
-export function searchKBByEmbedding(queryEmbedding: number[], topK = 5) {
-  const rows = db.prepare(`SELECT id, source, chunk_index, text, embedding_json FROM kb_chunks`).all() as KBChunk[];
+export async function searchKBByEmbedding(queryEmbedding: number[], topK = 5) {
+  const rows = await getAllKBChunks();
   const scored = rows.map((r) => {
     const emb = JSON.parse(r.embedding_json) as number[];
     return { ...r, score: cosineSim(queryEmbedding, emb) };

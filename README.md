@@ -2,10 +2,12 @@
 
 A Telegram customer support assistant for an online casino, powered by OpenAI with RAG over a local knowledge base, plus an admin web UI to review conversations.
 
+Now uses Vercel Postgres for persistence (production-ready on Vercel).
+
 Key features:
 - Telegram webhook bot with OpenAI responses + KB retrieval
 - RAG over /kb (txt, md, pdf)
-- SQLite persistence (conversations, messages, KB chunks)
+- Postgres persistence (conversations, messages, KB chunks)
 - Admin UI (Basic Auth) to list, search, and view conversations
 - Responsible Gaming moderation and safety behaviors
 
@@ -21,6 +23,7 @@ The assistant is a customer support bot, not a gambling coach.
 - Node.js 20+
 - A Telegram bot token from BotFather
 - An OpenAI API key
+- A Postgres database (Vercel Postgres recommended)
 
 ## Environment
 Copy .env.example to .env and fill in values:
@@ -33,13 +36,15 @@ ADMIN_USER=admin
 ADMIN_PASS=change_me
 OPENAI_MODEL=gpt-4.1-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-large
-DATABASE_PATH=./data/data.db
+POSTGRES_URL=postgres://user:pass@host:5432/dbname
 
 ## Install
 
 npm install
 
 ## Run locally
+
+- Ensure POSTGRES_URL is set (you can use Neon, Railway, or local Postgres)
 
 - Dev server:
 
@@ -69,7 +74,7 @@ To delete webhook:
 Test by sending /start to your bot.
 
 ## Knowledge Base Ingestion
-Place txt, md, or pdf files in /kb. Then run:
+Place txt, md, or pdf files in /kb. Then run (with POSTGRES_URL configured locally):
 
 npm run ingest
 
@@ -77,7 +82,7 @@ This will:
 - Extract text (including PDF via pdf-parse)
 - Chunk into 800-char chunks with 100-char overlap
 - Create embeddings with OpenAI
-- Store in SQLite table kb_chunks
+- Store in Postgres table kb_chunks
 
 ## Admin UI
 - Open http://localhost:3000/admin
@@ -104,14 +109,17 @@ Tests cover chunking, similarity, and moderation.
 - Telegram retries handled idempotently where possible
 - Basic per-chat rate limiting
 - Graceful error handling with friendly Telegram replies
+- Uses Vercel Postgres for persistence on Vercel
 
-## Deploying (Vercel + GitHub)
+## Deploying (Vercel + GitHub + Vercel Postgres)
 - Push this repo to GitHub
 - In Vercel, create a new project from the repo
-- Set environment variables in Vercel dashboard (.env values)
-- Set build command: npm run build
-- Set output/start: npm start (use Node server on Vercel’s Node serverless/Edge is not suitable for persistent SQLite). Alternatively deploy to a Node host (Railway/Fly.io/Render) for long-running server.
-- Configure Telegram webhook with your public URL
+- Add Vercel Postgres (Storage > Postgres) and link it to the project
+- In Environment Variables, add POSTGRES_URL (when you link Vercel Postgres, Vercel provides it automatically)
+- Also add remaining .env values
+- Build Command: npm run build
+- Start Command: npm start
+- After deploy, copy the production URL and set the Telegram webhook
 
 ## What to put in /kb
 - KYC steps, accepted documents

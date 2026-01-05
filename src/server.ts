@@ -11,6 +11,7 @@ import { checkRateLimit } from './utils/rateLimit.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ejsLayouts } from './admin/views/_ejsLayoutShim.js';
+import { initSchema } from './db.js';
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
@@ -32,12 +33,12 @@ app.post('/telegram/webhook', async (req, res) => {
     }
     const chatId = String(update.message.chat.id);
     const username = update.message.chat.username || update.message.from?.username || null;
-    const convo = upsertConversation('telegram', chatId, username);
+    const convo = await upsertConversation('telegram', chatId, username);
 
     // Idempotency for inbound messages
-    const existingInbound = findInboundByTelegramId(convo.id, String(update.message.message_id));
+    const existingInbound = await findInboundByTelegramId(convo.id, String(update.message.message_id));
     if (!existingInbound) {
-      insertMessage({
+      await insertMessage({
         conversation_id: convo.id,
         direction: 'in',
         role: 'user',
@@ -68,7 +69,7 @@ app.post('/telegram/webhook', async (req, res) => {
     if (!checkRateLimit(chatId)) {
       const msg = 'Please slow down a bit. Feel free to ask again in a moment.';
       const outId = await sendMessage(update.message.chat.id, msg);
-      insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: msg, telegram_message_id: String(outId || '') });
+      await insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: msg, telegram_message_id: String(outId || '') });
       return res.json({ ok: true });
     }
 
@@ -77,14 +78,14 @@ app.post('/telegram/webhook', async (req, res) => {
     if (mod.disallowed) {
       const reply = refusalMessage();
       const outId = await sendMessage(update.message.chat.id, reply);
-      insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: reply, telegram_message_id: String(outId || '') });
+      await insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: reply, telegram_message_id: String(outId || '') });
       // Flag RG if also present
-      if (mod.rgRisk) setConversationRGFlag(convo.id, true);
+      if (mod.rgRisk) await setConversationRGFlag(convo.id, true);
       return res.json({ ok: true });
     }
 
     // Set RG flag if needed
-    if (mod.rgRisk) setConversationRGFlag(convo.id, true);
+    if (mod.rgRisk) await setConversationRGFlag(convo.id, true);
 
     // Retrieve KB
     const retrieved = await retrieveTopK(text, 5);
@@ -105,7 +106,7 @@ app.post('/telegram/webhook', async (req, res) => {
     const outMsgId = await sendMessage(update.message.chat.id, answer);
 
     // Persist outbound with metadata
-    insertMessage({
+    await insertMessage({
       conversation_id: convo.id,
       direction: 'out',
       role: 'assistant',
@@ -130,7 +131,13 @@ app.post('/telegram/webhook', async (req, res) => {
 
 app.use('/admin', adminRouter);
 
-app.listen(config.PORT, () => {
+initSchema().then(() => {
+  app.listen(config.PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Server listening on :${config.PORT}`);
+  });
+}).catch((err) => {
   // eslint-disable-next-line no-console
-  console.log(`Server listening on :${config.PORT}`);
+  console.error('Schema init failed', err);
+  process.exit(1);
 });
