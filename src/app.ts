@@ -8,6 +8,7 @@ import { moderateText, refusalMessage, shouldAddRGFooter } from './utils/moderat
 import { retrieveTopK } from './rag/retrieve.js';
 import { generateReply } from './openai.js';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { ejsLayouts } from './admin/views/_ejsLayoutShim.js';
 import { initSchema } from './db.js';
@@ -18,9 +19,15 @@ const __dirname = path.dirname(__filename);
 export const app = express();
 app.use(express.json({ limit: '2mb' }));
 
-// Views - files are deployed relative to the compiled JS location
-const viewsPath = path.join(__dirname, 'admin/views');
-app.set('views', viewsPath);
+// Views - resolve robustly for both local and serverless builds
+const candidateViews = [
+  path.resolve(process.cwd(), 'src/admin/views'),
+  path.resolve(process.cwd(), 'dist/src/admin/views'),
+  path.join(__dirname, 'admin/views'),
+];
+let resolvedViews = candidateViews.find((p) => fs.existsSync(path.join(p, 'layout.ejs')));
+if (!resolvedViews) resolvedViews = candidateViews[0];
+app.set('views', resolvedViews);
 app.set('view engine', 'ejs');
 (ejsLayouts as any)(app);
 
