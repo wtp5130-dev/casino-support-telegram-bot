@@ -39,7 +39,7 @@ jobs:
           echo "CLICKUP_DOC_SHARE_URLS: $([ -n \"$CLICKUP_DOC_SHARE_URLS\" ] && echo true || echo false)"
 
       - name: Install deps
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Ingest knowledge base
         env:
