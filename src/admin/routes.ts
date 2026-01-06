@@ -10,6 +10,7 @@ adminRouter.use(requireAdminBasicAuth);
 
 adminRouter.get('/', async (req: Request, res: Response) => {
   try {
+    console.log('Admin route hit: GET /admin');
     // Check database health first
     const dbHealthy = await checkDatabaseHealth();
     if (!dbHealthy) {
@@ -19,12 +20,28 @@ adminRouter.get('/', async (req: Request, res: Response) => {
     const q = (req.query.q as string) || '';
     const limit = Number(req.query.limit || 50);
     const offset = Number(req.query.offset || 0);
-    const { items, total } = await listConversations(limit, offset, q);
-    res.render('conversations', { items, total, q, limit, offset });
+
+    // Enforce a hard timeout on the DB query to avoid 504s
+    const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Database query timeout')), 5000));
+    const data = await Promise.race([
+      (async () => {
+        const { items, total } = await listConversations(limit, offset, q);
+        return { items, total };
+      })(),
+      timeoutPromise,
+    ]);
+
+    // @ts-ignore - data will be set if no timeout
+    res.render('conversations', { items: data.items, total: data.total, q, limit, offset });
   } catch (err: any) {
     console.error('Admin GET / error:', err?.message || err);
     res.status(500).send(`Error: ${err?.message || 'Unknown error'}`);
   }
+});
+
+// Lightweight ping for diagnostics
+adminRouter.get('/ping', (_req: Request, res: Response) => {
+  res.type('text/plain').send('ok');
 });
 
 adminRouter.get('/conversations/:id', async (req: Request, res: Response) => {
