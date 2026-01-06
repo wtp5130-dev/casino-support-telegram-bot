@@ -1,28 +1,54 @@
 import serverless from 'serverless-http';
-// After tsc compiles, both api and src go to dist/
-// So from dist/api/index.js, ../src/app.js is actually dist/src/app.js
-import app, { init } from '../src/app.js';
+import { app, init, handleWebhook } from '../src/app.js';
 
 const appHandler = serverless(app);
+
+// Helper to read and parse request body
+async function readBody(req: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk: any) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (e) {
+        reject(e);
+      }
+    });
+    req.on('error', reject);
+  });
+}
 
 export default async function(req: any, res: any) {
   console.log('Serverless handler invoked', { path: req?.url, method: req?.method });
   try {
-    // Handle /telegram/webhook directly without full Express init
+    // Handle /telegram/webhook directly with manual body parsing
     if (req?.url?.startsWith('/telegram/webhook') && req?.method === 'POST') {
       console.log('Handling Telegram webhook directly');
       try {
         await init();
-        console.log('Init complete for webhook');
-      } catch (e: any) {
-        console.error('Init error for webhook:', e?.message);
-        res.statusCode = 503;
+        const update = await readBody(req);
+        console.log('Webhook update received:', { message_id: update.message?.message_id, text: update.message?.text?.substring(0, 50) });
+        
+        // Respond immediately to Telegram
+        res.statusCode = 200;
         res.setHeader('content-type', 'application/json');
-        res.end(JSON.stringify({ ok: false, error: 'Init failed' }));
-        return;
+        res.end(JSON.stringify({ ok: true }));
+
+        // Process async in background (don't await)
+        if (update.message && update.message.text) {
+          console.log('Processing message:', update.message.text);
+          handleWebhook(update).catch(e => console.error('Webhook handler error:', e?.message || e));
+        }
+      } catch (e: any) {
+        console.error('Webhook error:', e?.message || e);
+        res.statusCode = 500;
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ ok: false, error: e?.message }));
       }
-      // Pass through to Express handler
-      return appHandler(req, res);
+      return;
     }
 
     // Handle /health endpoints directly without going through Express
@@ -57,7 +83,6 @@ export default async function(req: any, res: any) {
 
     console.log('Initializing app for:', req?.url);
     try {
-      // Put a hard timeout around init to avoid 300s hangs when DB is unreachable
       const initTimeout = new Promise((_resolve, reject) => setTimeout(() => reject(new Error('Init timeout')), 4000));
       await Promise.race([init(), initTimeout]);
     } catch (e: any) {

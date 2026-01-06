@@ -52,11 +52,10 @@ app.get('/admin', (_req, res) => {
   res.json({ ok: true, message: 'Admin dashboard', note: 'Full UI coming soon' });
 });
 
-app.post('/telegram/webhook', async (req, res) => {
-  const update = req.body as TelegramUpdate;
+export async function handleWebhook(update: TelegramUpdate): Promise<void> {
   try {
     if (!update.message || !update.message.text) {
-      return res.json({ ok: true });
+      return;
     }
     const chatId = String(update.message.chat.id);
     const username = update.message.chat.username || update.message.from?.username || null;
@@ -83,13 +82,13 @@ app.post('/telegram/webhook', async (req, res) => {
       ].join('\n');
       const outId = await sendMessage(update.message.chat.id, welcome);
       await insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: welcome, telegram_message_id: String(outId || '') });
-      return res.json({ ok: true });
+      return;
     }
     if (text === '/help') {
       const help = 'You can ask about account issues, KYC steps, deposits/withdrawals, bonus terms in our policy, troubleshooting, and responsible gaming options (limits/self-exclusion).';
       const outId = await sendMessage(update.message.chat.id, help);
       await insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: help, telegram_message_id: String(outId || '') });
-      return res.json({ ok: true });
+      return;
     }
 
     // Moderation
@@ -99,7 +98,7 @@ app.post('/telegram/webhook', async (req, res) => {
       const outId = await sendMessage(update.message.chat.id, reply);
       await insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: reply, telegram_message_id: String(outId || '') });
       if (mod.rgRisk) await setConversationRGFlag(convo.id, true);
-      return res.json({ ok: true });
+      return;
     }
 
     if (mod.rgRisk) await setConversationRGFlag(convo.id, true);
@@ -127,15 +126,23 @@ app.post('/telegram/webhook', async (req, res) => {
       prompt_tokens: gen.prompt_tokens ?? null,
       completion_tokens: gen.completion_tokens ?? null,
     });
-
-    res.json({ ok: true });
   } catch (err) {
     const friendly = 'Sorry, something went wrong. Please try again later or contact support.';
     try {
-      if (req.body?.message?.chat?.id) {
-        await sendMessage(req.body.message.chat.id, friendly);
+      if (update.message?.chat?.id) {
+        await sendMessage(update.message.chat.id, friendly);
       }
     } catch {}
+  }
+}
+
+app.post('/telegram/webhook', async (req, res) => {
+  const update = req.body as TelegramUpdate;
+  try {
+    await handleWebhook(update);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Webhook route error:', err);
     res.json({ ok: true });
   }
 });
