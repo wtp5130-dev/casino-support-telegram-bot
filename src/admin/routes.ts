@@ -6,6 +6,11 @@ import { checkDatabaseHealth } from '../db.js';
 
 export const adminRouter = Router();
 
+// Public lightweight ping for diagnostics (no auth)
+adminRouter.get('/ping', (_req: Request, res: Response) => {
+  res.type('text/plain').send('ok');
+});
+
 adminRouter.use(requireAdminBasicAuth);
 
 adminRouter.get('/', async (req: Request, res: Response) => {
@@ -44,10 +49,7 @@ adminRouter.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// Lightweight ping for diagnostics
-adminRouter.get('/ping', (_req: Request, res: Response) => {
-  res.type('text/plain').send('ok');
-});
+// (ping route is defined above, before auth)
 
 adminRouter.get('/conversations/:id', async (req: Request, res: Response) => {
   try {

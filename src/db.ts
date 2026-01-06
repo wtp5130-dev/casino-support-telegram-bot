@@ -1,6 +1,10 @@
-import { sql } from '@vercel/postgres';
+import { neon, neonConfig } from '@neondatabase/serverless';
 
-export { sql };
+// Cache HTTP connections across invocations in serverless
+neonConfig.fetchConnectionCache = true;
+
+// Create a tagged template query function from Neon
+export const sql = neon(process.env.POSTGRES_URL || '');
 
 export async function checkDatabaseHealth() {
   try {
