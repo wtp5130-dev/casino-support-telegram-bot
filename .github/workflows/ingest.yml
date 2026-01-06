@@ -57,11 +57,18 @@ jobs:
             echo "No CLICKUP_API_TOKEN found -> ingesting local KB files"
             npx tsx src/rag/ingest.ts
           else
-            echo "CLICKUP_API_TOKEN present -> ingesting ClickUp tasks (lists)"
-            npx tsx src/rag/ingest_clickup.ts || exit 1
+            echo "CLICKUP_API_TOKEN present"
+            if [ -n "$CLICKUP_LIST_IDS" ]; then
+              echo "Ingesting ClickUp tasks (lists)"
+              npx tsx src/rag/ingest_clickup.ts || exit 1
+            else
+              echo "CLICKUP_LIST_IDS not set -> skipping tasks ingestion"
+            fi
             if [ -n "$CLICKUP_WORKSPACE_ID" ] || [ -n "$CLICKUP_DOC_IDS" ]; then
               echo "Ingesting ClickUp Docs via API"
               npx tsx src/rag/ingest_clickup_api_docs.ts || exit 1
+            else
+              echo "No CLICKUP_WORKSPACE_ID or CLICKUP_DOC_IDS -> skipping Docs API ingestion"
             fi
           fi
           if [ -n "$CLICKUP_DOC_SHARE_URLS" ]; then
