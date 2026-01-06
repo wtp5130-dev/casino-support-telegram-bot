@@ -175,8 +175,8 @@ app.post('/telegram/webhook', async (req, res) => {
   }
 });
 
-// Admin routes (fixed with manual webhook body parsing)
-app.use('/admin', adminRouter);
+// Admin routes disabled - serverless handler manages them directly
+// app.use('/admin', adminRouter);
 
 export async function init() {
   try {

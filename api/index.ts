@@ -1,6 +1,8 @@
 import serverless from 'serverless-http';
 import { app, init, handleWebhook } from '../src/app.js';
 import auth from 'basic-auth';
+import { listConversations, getConversation } from '../src/models/conversations.js';
+import { getMessagesForConversation } from '../src/models/messages.js';
 
 const appHandler = serverless(app);
 
@@ -26,6 +28,61 @@ async function readBody(req: any): Promise<any> {
 function checkAdminAuth(req: any): boolean {
   const creds = auth(req);
   return creds && creds.name === process.env.ADMIN_USER && creds.pass === process.env.ADMIN_PASS;
+}
+
+// Helper to render HTML conversations list
+async function renderConversationsList(query?: string): Promise<string> {
+  const q = query || '';
+  const limit = 25;
+  const offset = 0;
+  const { items, total } = await listConversations(limit, offset, q);
+
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Admin - Casino Support Bot</title>
+    <style>
+      body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 0; background: #f7f7f7; }
+      header { background: #222; color: #fff; padding: 12px 16px; }
+      main { padding: 16px; max-width: 1000px; margin: 0 auto; }
+      a { color: #0b73ff; text-decoration: none; }
+      .badge { display: inline-block; padding: 2px 6px; font-size: 12px; border-radius: 4px; background: #e33; color: #fff; margin-left: 6px; }
+      .card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+      .muted { color: #666; }
+      form.search { margin: 12px 0; }
+      input, button { padding: 8px; font-size: 14px; }
+      input { width: 300px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Casino Support Admin Dashboard</strong>
+    </header>
+    <main>
+      <h2>Conversations</h2>
+      <form class="search" method="get">
+        <input type="text" name="q" placeholder="Search chat_id, username, or text" value="${q}" />
+        <button type="submit">Search</button>
+      </form>
+      <p class="muted">Total: ${total}</p>
+      ${items.map(c => `
+        <div class="card">
+          <div>
+            <a href="/admin/conversations/${c.id}">#${c.id}</a>
+            <span class="muted">chat_id:</span> ${c.chat_id}
+            ${c.username ? `<span class="muted">@</span>${c.username}` : ''}
+            ${c.rg_flag ? '<span class="badge">RG flag</span>' : ''}
+          </div>
+          <div class="muted">last seen: ${c.last_seen_at}</div>
+          ${c.last_text ? `<div class="muted">last: ${(c.last_text || '').slice(0, 120)}</div>` : ''}
+        </div>
+      `).join('')}
+    </main>
+  </body>
+</html>`;
+
+  return html;
 }
 
 export default async function(req: any, res: any) {
@@ -86,6 +143,34 @@ export default async function(req: any, res: any) {
         }));
       } else {
         res.end(JSON.stringify({ ok: true }));
+      }
+      return;
+    }
+
+    // Handle /admin root endpoint
+    if (urlPath === '/admin' || urlPath === '/admin/') {
+      console.log('Handling /admin root');
+      // Check auth
+      if (!checkAdminAuth(req)) {
+        res.statusCode = 401;
+        res.setHeader('www-authenticate', 'Basic realm="Admin"');
+        res.setHeader('content-type', 'text/plain');
+        res.end('Unauthorized');
+        return;
+      }
+      
+      try {
+        await init();
+        const query = new URL(`http://localhost${req.url}`).searchParams.get('q');
+        const html = await renderConversationsList(query || undefined);
+        res.statusCode = 200;
+        res.setHeader('content-type', 'text/html');
+        res.end(html);
+      } catch (e: any) {
+        console.error('Admin root error:', e?.message);
+        res.statusCode = 500;
+        res.setHeader('content-type', 'text/plain');
+        res.end(`Error: ${e?.message}`);
       }
       return;
     }
