@@ -25,7 +25,7 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-async function ingestDoc(token: string, docId: string) {
+export async function ingestDoc(token: string, docId: string) {
   const pages = await listDocPages(token, docId);
   for (const p of pages) {
     try {
