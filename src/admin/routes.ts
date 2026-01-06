@@ -33,7 +33,7 @@ adminRouter.get('/', async (req: Request, res: Response) => {
     // Check database health first
     const dbHealthy = await checkDatabaseHealth();
     if (!dbHealthy) {
-      return res.status(503).send('Database connection unavailable. Check POSTGRES_URL environment variable.');
+      return res.status(503).json({ error: 'Database unavailable' });
     }
 
     const q = (req.query.q as string) || '';
@@ -50,11 +50,11 @@ adminRouter.get('/', async (req: Request, res: Response) => {
       timeoutPromise,
     ]);
 
-    // @ts-ignore - data will be set if no timeout
-    res.render('conversations', { items: data.items, total: data.total, q, limit, offset });
+    // Return JSON instead of rendering EJS to avoid template rendering hangs
+    res.json({ ok: true, data: data, q, limit, offset });
   } catch (err: any) {
     console.error('Admin GET / error:', err?.message || err);
-    res.status(500).send(`Error: ${err?.message || 'Unknown error'}`);
+    res.status(500).json({ error: err?.message || 'Unknown error' });
   }
 });
 
