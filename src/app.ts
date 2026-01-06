@@ -14,8 +14,9 @@ import { initSchema } from './db.js';
 export const app = express();
 app.use(express.json({ limit: '2mb' }));
 
-// Views - resolve from project root so it works in serverless and local
-app.set('views', path.resolve(process.cwd(), 'src/admin/views'));
+// Views - in serverless, files are in dist/src/admin/views; locally in src/admin/views
+const viewsPath = process.env.VERCEL ? 'src/admin/views' : path.resolve(process.cwd(), 'src/admin/views');
+app.set('views', viewsPath);
 app.set('view engine', 'ejs');
 (ejsLayouts as any)(app);
 
