@@ -21,7 +21,7 @@ export type KBChunk = {
 
 export async function getAllKBChunks(): Promise<KBChunk[]> {
   const res = await sql<KBChunk>`SELECT id, source, chunk_index, text, embedding_json FROM kb_chunks`;
-  return (res.rows || []) as any;
+  return (res || []) as any;
 }
 
 export function cosineSim(a: number[], b: number[]) {

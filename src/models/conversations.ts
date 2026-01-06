@@ -19,7 +19,7 @@ export async function upsertConversation(platform: string, chat_id: string, user
     DO UPDATE SET last_seen_at = ${now}, username = COALESCE(${username ?? null}, conversations.username)
     RETURNING *;
   `;
-  return result.rows[0] as any;
+  return (result[0] as any);
 }
 
 export async function setConversationRGFlag(id: number, flag: boolean) {
@@ -42,8 +42,8 @@ export async function listConversations(limit = 50, offset = 0, q?: string) {
       SELECT COUNT(*)::int as c FROM conversations c
       WHERE chat_id ILIKE ${like} OR username ILIKE ${like} OR id IN (SELECT conversation_id FROM messages WHERE text ILIKE ${like})
     `;
-    const items = itemsRes.rows as any;
-    const total = totalRes.rows[0]?.c || 0;
+    const items = itemsRes as any;
+    const total = totalRes[0]?.c || 0;
     return { items, total };
   } else {
     const itemsRes = await sql< (Conversation & { last_text?: string; last_message_at?: string }) >`
@@ -55,11 +55,11 @@ export async function listConversations(limit = 50, offset = 0, q?: string) {
       LIMIT ${limit} OFFSET ${offset}
     `;
     const totalRes = await sql<{ c: number }>`SELECT COUNT(*)::int as c FROM conversations`;
-    return { items: itemsRes.rows as any, total: totalRes.rows[0].c };
+    return { items: itemsRes as any, total: totalRes[0].c };
   }
 }
 
 export async function getConversation(id: number) {
   const res = await sql<Conversation>`SELECT * FROM conversations WHERE id=${id} LIMIT 1`;
-  return (res.rows[0] || undefined) as any;
+  return (res[0] || undefined) as any;
 }
