@@ -19,15 +19,6 @@ const __dirname = path.dirname(__filename);
 export const app = express();
 app.use(express.json({ limit: '2mb' }));
 
-// Add timeout to all responses to prevent infinite hangs
-app.use((req, res, next) => {
-  res.setTimeout(10000, () => {
-    console.error('Response timeout for', req.path);
-    res.status(504).json({ error: 'Response timeout' });
-  });
-  next();
-});
-
 // Views - resolve robustly for both local and serverless builds
 const candidateViews = [
   path.resolve(process.cwd(), 'src/admin/views'),
