@@ -8,8 +8,17 @@ const appHandler = serverless(app);
 export default async function(req: any, res: any) {
   console.log('Serverless handler invoked', { path: req?.url, method: req?.method });
   try {
+    // Handle /admin directly without going through Express
+    if (req?.url?.startsWith('/admin')) {
+      console.log('Handling /admin directly');
+      res.statusCode = 200;
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ ok: true, message: 'Admin dashboard', note: 'Full UI coming soon' }));
+      return;
+    }
+
     // Allow health and lightweight diagnostics to respond even if env not fully configured
-    if (req?.url && (req.url.startsWith('/health') || req.url.startsWith('/admin/ping') || req.url.startsWith('/admin?fast=1'))) {
+    if (req?.url && (req.url.startsWith('/health') || req.url.startsWith('/admin/ping'))) {
       console.log('Health check request');
       return appHandler(req, res);
     }
