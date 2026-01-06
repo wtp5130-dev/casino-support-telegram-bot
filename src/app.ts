@@ -48,6 +48,10 @@ app.get('/health/env', (_req, res) => {
 
 app.get('/', (_req, res) => res.json({ ok: true, service: 'Casino Support Telegram Bot' }));
 
+app.get('/admin', (_req, res) => {
+  res.json({ ok: true, message: 'Admin dashboard', note: 'Full UI coming soon' });
+});
+
 app.post('/telegram/webhook', async (req, res) => {
   const update = req.body as TelegramUpdate;
   try {
@@ -136,7 +140,8 @@ app.post('/telegram/webhook', async (req, res) => {
   }
 });
 
-app.use('/admin', adminRouter);
+// Temporarily disable admin router to isolate hanging issue
+// app.use('/admin', adminRouter);
 
 export async function init() {
   try {
