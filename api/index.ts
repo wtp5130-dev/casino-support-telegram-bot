@@ -27,7 +27,7 @@ async function readBody(req: any): Promise<any> {
 // Helper to check admin auth
 function checkAdminAuth(req: any): boolean {
   const creds = auth(req);
-  return creds && creds.name === process.env.ADMIN_USER && creds.pass === process.env.ADMIN_PASS;
+  return !!(creds && creds.name === process.env.ADMIN_USER && creds.pass === process.env.ADMIN_PASS);
 }
 
 // Helper to render HTML conversations list
@@ -66,7 +66,7 @@ async function renderConversationsList(query?: string): Promise<string> {
         <button type="submit">Search</button>
       </form>
       <p class="muted">Total: ${total}</p>
-      ${items.map(c => `
+      ${items.map((c: any) => `
         <div class="card">
           <div>
             <a href="/admin/conversations/${c.id}">#${c.id}</a>
