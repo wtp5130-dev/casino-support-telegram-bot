@@ -10,6 +10,7 @@
     "ingest": "tsx src/rag/ingest.ts",
     "ingest:clickup": "tsx src/rag/ingest_clickup.ts",
     "ingest:clickup-docs": "tsx src/rag/ingest_clickup_docs.ts",
+    "ingest:clickup-api-docs": "tsx src/rag/ingest_clickup_api_docs.ts",
     "test": "vitest run"
   },
   "dependencies": {

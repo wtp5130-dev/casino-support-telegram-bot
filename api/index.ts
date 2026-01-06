@@ -199,6 +199,8 @@ export default async function(req: any, res: any) {
           CLICKUP_API_TOKEN: !!process.env.CLICKUP_API_TOKEN,
           CLICKUP_LIST_IDS: !!process.env.CLICKUP_LIST_IDS,
           CLICKUP_DOC_SHARE_URLS: !!process.env.CLICKUP_DOC_SHARE_URLS,
+          CLICKUP_WORKSPACE_ID: !!process.env.CLICKUP_WORKSPACE_ID,
+          CLICKUP_DOC_IDS: !!process.env.CLICKUP_DOC_IDS,
           BASE_URL: process.env.BASE_URL || 'not set',
           NODE_ENV: process.env.NODE_ENV,
         }));

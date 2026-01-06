@@ -13,6 +13,8 @@ export type AppConfig = {
   CLICKUP_API_TOKEN?: string;
   CLICKUP_LIST_IDS?: string; // comma-separated
   CLICKUP_DOC_SHARE_URLS?: string; // comma-separated public doc URLs
+  CLICKUP_WORKSPACE_ID?: string; // for API-based Docs
+  CLICKUP_DOC_IDS?: string; // optional comma-separated doc ids
 };
 
 export const config: AppConfig = {
@@ -28,6 +30,8 @@ export const config: AppConfig = {
   CLICKUP_API_TOKEN: process.env.CLICKUP_API_TOKEN,
   CLICKUP_LIST_IDS: process.env.CLICKUP_LIST_IDS,
   CLICKUP_DOC_SHARE_URLS: process.env.CLICKUP_DOC_SHARE_URLS,
+  CLICKUP_WORKSPACE_ID: process.env.CLICKUP_WORKSPACE_ID,
+  CLICKUP_DOC_IDS: process.env.CLICKUP_DOC_IDS,
 };
 
 export function ensureConfig() {
