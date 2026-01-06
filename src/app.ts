@@ -121,3 +121,5 @@ export async function init() {
     throw err;
   }
 }
+
+export default app;
