@@ -21,6 +21,8 @@ app.set('view engine', 'ejs');
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+app.get('/', (_req, res) => res.json({ ok: true, service: 'Casino Support Telegram Bot' }));
+
 app.post('/telegram/webhook', async (req, res) => {
   const update = req.body as TelegramUpdate;
   try {
