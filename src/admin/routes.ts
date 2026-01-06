@@ -11,6 +11,11 @@ adminRouter.use(requireAdminBasicAuth);
 adminRouter.get('/', async (req: Request, res: Response) => {
   try {
     console.log('Admin route hit: GET /admin');
+    // Fast path to verify routing without touching DB
+    if ((req.query.fast as string) === '1') {
+      res.type('text/html').send('<h1>Admin reachable</h1><p>Route works. Add credentials and remove ?fast=1 to load data.</p>');
+      return;
+    }
     // Check database health first
     const dbHealthy = await checkDatabaseHealth();
     if (!dbHealthy) {
