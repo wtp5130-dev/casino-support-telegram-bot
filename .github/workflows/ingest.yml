@@ -38,3 +38,11 @@ jobs:
           CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
           CLICKUP_LIST_IDS: ${{ secrets.CLICKUP_LIST_IDS }}
         run: npx tsx src/rag/ingest_clickup.ts
+
+      - name: Ingest ClickUp Docs (public URLs)
+        if: ${{ secrets.CLICKUP_DOC_SHARE_URLS != '' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          CLICKUP_DOC_SHARE_URLS: ${{ secrets.CLICKUP_DOC_SHARE_URLS }}
+        run: npx tsx src/rag/ingest_clickup_docs.ts

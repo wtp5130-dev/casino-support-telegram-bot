@@ -12,6 +12,7 @@ export type AppConfig = {
   POSTGRES_URL: string;
   CLICKUP_API_TOKEN?: string;
   CLICKUP_LIST_IDS?: string; // comma-separated
+  CLICKUP_DOC_SHARE_URLS?: string; // comma-separated public doc URLs
 };
 
 export const config: AppConfig = {
@@ -26,6 +27,7 @@ export const config: AppConfig = {
   POSTGRES_URL: process.env.POSTGRES_URL || '',
   CLICKUP_API_TOKEN: process.env.CLICKUP_API_TOKEN,
   CLICKUP_LIST_IDS: process.env.CLICKUP_LIST_IDS,
+  CLICKUP_DOC_SHARE_URLS: process.env.CLICKUP_DOC_SHARE_URLS,
 };
 
 export function ensureConfig() {
