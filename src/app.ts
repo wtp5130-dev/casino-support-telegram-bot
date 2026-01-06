@@ -112,7 +112,12 @@ app.post('/telegram/webhook', async (req, res) => {
 app.use('/admin', adminRouter);
 
 export async function init() {
-  // Validate env only when initializing the app (serverless-safe)
-  ensureConfig();
-  await initSchema();
+  try {
+    // Validate env only when initializing the app (serverless-safe)
+    ensureConfig();
+    await initSchema();
+  } catch (err: any) {
+    console.error('App init error:', err?.message || err);
+    throw err;
+  }
 }
