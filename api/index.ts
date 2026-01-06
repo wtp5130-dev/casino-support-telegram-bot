@@ -8,6 +8,27 @@ const appHandler = serverless(app);
 export default async function(req: any, res: any) {
   console.log('Serverless handler invoked', { path: req?.url, method: req?.method });
   try {
+    // Handle /health endpoints directly without going through Express
+    if (req?.url?.startsWith('/health')) {
+      console.log('Handling /health directly');
+      res.statusCode = 200;
+      res.setHeader('content-type', 'application/json');
+      if (req.url === '/health/env') {
+        res.end(JSON.stringify({
+          POSTGRES_URL: !!process.env.POSTGRES_URL,
+          OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+          TELEGRAM_BOT_TOKEN: !!process.env.TELEGRAM_BOT_TOKEN,
+          ADMIN_USER: !!process.env.ADMIN_USER,
+          ADMIN_PASS: !!process.env.ADMIN_PASS,
+          BASE_URL: process.env.BASE_URL || 'not set',
+          NODE_ENV: process.env.NODE_ENV,
+        }));
+      } else {
+        res.end(JSON.stringify({ ok: true }));
+      }
+      return;
+    }
+
     // Handle /admin directly without going through Express
     if (req?.url?.startsWith('/admin')) {
       console.log('Handling /admin directly');
@@ -17,11 +38,6 @@ export default async function(req: any, res: any) {
       return;
     }
 
-    // Allow health and lightweight diagnostics to respond even if env not fully configured
-    if (req?.url && (req.url.startsWith('/health') || req.url.startsWith('/admin/ping'))) {
-      console.log('Health check request');
-      return appHandler(req, res);
-    }
     console.log('Initializing app for:', req?.url);
     try {
       // Put a hard timeout around init to avoid 300s hangs when DB is unreachable
