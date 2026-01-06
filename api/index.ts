@@ -82,15 +82,6 @@ export default async function(req: any, res: any) {
       return;
     }
 
-    // Handle /admin directly without going through Express
-    if (req?.url?.startsWith('/admin')) {
-      console.log('Handling /admin directly');
-      res.statusCode = 200;
-      res.setHeader('content-type', 'application/json');
-      res.end(JSON.stringify({ ok: true, message: 'Admin dashboard', note: 'Full UI coming soon' }));
-      return;
-    }
-
     console.log('Initializing app for:', req?.url);
     try {
       const initTimeout = new Promise((_resolve, reject) => setTimeout(() => reject(new Error('Init timeout')), 4000));

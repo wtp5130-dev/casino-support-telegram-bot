@@ -175,8 +175,8 @@ app.post('/telegram/webhook', async (req, res) => {
   }
 });
 
-// Temporarily disable admin router to isolate hanging issue
-// app.use('/admin', adminRouter);
+// Admin routes (fixed with manual webhook body parsing)
+app.use('/admin', adminRouter);
 
 export async function init() {
   try {

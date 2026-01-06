@@ -25,28 +25,41 @@ adminRouter.use((req: Request, res: Response, next) => {
   next();
 });
 
-// TEMPORARILY DISABLED FOR TESTING
-// adminRouter.use(requireAdminBasicAuth);
+// Require admin authentication
+adminRouter.use(requireAdminBasicAuth);
 
 adminRouter.get('/', async (req: Request, res: Response) => {
   try {
     console.log('Admin route hit: GET /admin');
     
-    // Fast path to verify routing without touching DB
-    if ((req.query.fast as string) === '1') {
-      res.type('text/html').send('<h1>Admin reachable</h1><p>Route works. Add credentials and remove ?fast=1 to load data.</p>');
-      return;
+    // Check database health
+    const dbHealthy = await checkDatabaseHealth();
+    if (!dbHealthy) {
+      return res.status(503).json({ error: 'Database unavailable' });
     }
 
-    // Return immediately without DB access to test routing
-    res.json({ 
-      ok: true, 
-      message: 'Admin dashboard',
-      info: 'Database support coming soon'
+    // Get page params
+    const q = (req.query.q as string) || '';
+    const page = Math.max(0, Number(req.query.page || 0));
+    const limit = Math.min(100, Number(req.query.limit || 25));
+    const offset = page * limit;
+
+    // Fetch conversations
+    const { items, total } = await listConversations(limit, offset, q);
+    const totalPages = Math.ceil(total / limit);
+
+    // Render conversations list
+    res.render('conversations', {
+      conversations: items,
+      total,
+      page,
+      totalPages,
+      limit,
+      query: q,
     });
   } catch (err: any) {
     console.error('Admin GET / error:', err?.message || err);
-    res.status(500).json({ error: err?.message || 'Unknown error' });
+    res.status(500).render('error', { error: err?.message || 'Unknown error' });
   }
 });
 
@@ -56,12 +69,15 @@ adminRouter.get('/conversations/:id', async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
     const convo = await getConversation(id);
-    if (!convo) return res.status(404).send('Not found');
+    if (!convo) return res.status(404).json({ error: 'Conversation not found' });
+    
     const messages = await getMessagesForConversation(id);
+    
+    // Render conversation detail view
     res.render('conversation', { convo, messages });
   } catch (err: any) {
     console.error('Admin GET /conversations/:id error:', err?.message || err);
-    res.status(500).send(`Error: ${err?.message || 'Unknown error'}`);
+    res.status(500).json({ error: err?.message || 'Unknown error' });
   }
 });
 
