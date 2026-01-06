@@ -59,25 +59,12 @@ async function main() {
 
   const urls = urlCsv.split(',').map((s) => s.trim()).filter(Boolean);
   for (const url of urls) {
-    const { docId, pageId } = parseDocAndPage(url);
-    if (docId) {
-      try {
-        // Try full doc ingestion first
-        await ingestDoc(token, docId);
-        continue;
-      } catch (e) {
-        // Fallback to single page if full doc fails
-        if (pageId) {
-          await ingestSinglePage(token, pageId, docId);
-          continue;
-        }
-        throw e;
-      }
-    } else if (pageId) {
-      await ingestSinglePage(token, pageId);
-    } else {
-      throw new Error(`Could not parse doc/page from URL: ${url}`);
+    const { docId } = parseDocAndPage(url);
+    if (!docId) {
+      throw new Error(`Could not parse doc id from URL: ${url}`);
     }
+    // Always ingest the entire doc (all pages)
+    await ingestDoc(token, docId);
   }
 }
 
