@@ -2,6 +2,21 @@ import { sql } from '@vercel/postgres';
 
 export { sql };
 
+export async function checkDatabaseHealth() {
+  try {
+    const result = await Promise.race([
+      sql`SELECT 1`,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database connection timeout')), 3000)
+      ),
+    ]);
+    return true;
+  } catch (err: any) {
+    console.error('Database health check failed:', err?.message || err);
+    return false;
+  }
+}
+
 export async function initSchema() {
   try {
     // conversations

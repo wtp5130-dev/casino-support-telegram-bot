@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { requireAdminBasicAuth } from './auth.js';
 import { listConversations, getConversation } from '../models/conversations.js';
 import { getMessagesForConversation } from '../models/messages.js';
+import { checkDatabaseHealth } from '../db.js';
 
 export const adminRouter = Router();
 
@@ -9,18 +10,16 @@ adminRouter.use(requireAdminBasicAuth);
 
 adminRouter.get('/', async (req: Request, res: Response) => {
   try {
-    // Add timeout to prevent 504
-    const timeoutPromise = new Promise((_resolve, reject) =>
-      setTimeout(() => reject(new Error('Database query timeout')), 5000)
-    );
+    // Check database health first
+    const dbHealthy = await checkDatabaseHealth();
+    if (!dbHealthy) {
+      return res.status(503).send('Database connection unavailable. Check POSTGRES_URL environment variable.');
+    }
 
     const q = (req.query.q as string) || '';
     const limit = Number(req.query.limit || 50);
     const offset = Number(req.query.offset || 0);
-    
-    const queryPromise = listConversations(limit, offset, q);
-    const { items, total } = await Promise.race([queryPromise, timeoutPromise]) as any;
-    
+    const { items, total } = await listConversations(limit, offset, q);
     res.render('conversations', { items, total, q, limit, offset });
   } catch (err: any) {
     console.error('Admin GET / error:', err?.message || err);
