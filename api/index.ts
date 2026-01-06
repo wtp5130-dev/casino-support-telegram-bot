@@ -85,6 +85,64 @@ async function renderConversationsList(query?: string): Promise<string> {
   return html;
 }
 
+// Helper to render conversation detail page
+async function renderConversationDetail(convoId: number): Promise<string> {
+  const convo = await getConversation(convoId);
+  if (!convo) {
+    return `<!doctype html><html><body><h2>Not Found</h2><p>Conversation not found</p><a href="/admin">Back to conversations</a></body></html>`;
+  }
+
+  const messages = await getMessagesForConversation(convoId);
+
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Conversation #${convo.id}</title>
+    <style>
+      body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 0; background: #f7f7f7; }
+      header { background: #222; color: #fff; padding: 12px 16px; }
+      main { padding: 16px; max-width: 900px; margin: 0 auto; }
+      a { color: #0b73ff; }
+      .badge { display: inline-block; padding: 2px 6px; font-size: 12px; border-radius: 4px; background: #e33; color: #fff; margin-left: 6px; }
+      .info { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 16px; }
+      .muted { color: #666; }
+      .thread { display: flex; flex-direction: column; gap: 8px; }
+      .message { padding: 12px; border-radius: 8px; margin: 4px 0; }
+      .in { background: #e8f0fe; }
+      .out { background: #e6ffe8; }
+      .msg-meta { font-size: 12px; color: #666; margin-bottom: 4px; }
+      pre { margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Casino Support Admin</strong>
+    </header>
+    <main>
+      <a href="/admin">← Back to conversations</a>
+      <h2>Conversation #${convo.id} ${convo.rg_flag ? '<span class="badge">RG flag</span>' : ''}</h2>
+      <div class="info">
+        <div class="muted">chat_id: ${convo.chat_id} ${convo.username ? `| @${convo.username}` : ''}</div>
+        <div class="muted">platform: ${convo.platform} | last_seen: ${convo.last_seen_at}</div>
+      </div>
+      <h3>Messages</h3>
+      <div class="thread">
+        ${messages.map((m: any) => `
+          <div class="message ${m.direction}">
+            <div class="msg-meta">[${m.created_at}] <strong>${m.role}</strong> ${m.model ? `— ${m.model}` : ''}</div>
+            <pre>${m.text}</pre>
+            ${m.prompt_tokens || m.completion_tokens ? `<div class="muted">tokens: ${m.prompt_tokens}/${m.completion_tokens}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </main>
+  </body>
+</html>`;
+
+  return html;
+}
+
 export default async function(req: any, res: any) {
   const urlPath = req?.url?.split('?')[0]; // Remove query string
   console.log('Serverless handler invoked', { path: urlPath, method: req?.method, timestamp: new Date().toISOString() });
@@ -168,6 +226,35 @@ export default async function(req: any, res: any) {
         res.end(html);
       } catch (e: any) {
         console.error('Admin root error:', e?.message);
+        res.statusCode = 500;
+        res.setHeader('content-type', 'text/plain');
+        res.end(`Error: ${e?.message}`);
+      }
+      return;
+    }
+
+    // Handle /admin/conversations/:id endpoint
+    const convoMatch = urlPath?.match(/^\/admin\/conversations\/(\d+)$/);
+    if (convoMatch) {
+      console.log('Handling /admin/conversations/:id');
+      // Check auth
+      if (!checkAdminAuth(req)) {
+        res.statusCode = 401;
+        res.setHeader('www-authenticate', 'Basic realm="Admin"');
+        res.setHeader('content-type', 'text/plain');
+        res.end('Unauthorized');
+        return;
+      }
+
+      try {
+        await init();
+        const convoId = Number(convoMatch[1]);
+        const html = await renderConversationDetail(convoId);
+        res.statusCode = 200;
+        res.setHeader('content-type', 'text/html');
+        res.end(html);
+      } catch (e: any) {
+        console.error('Admin conversation detail error:', e?.message);
         res.statusCode = 500;
         res.setHeader('content-type', 'text/plain');
         res.end(`Error: ${e?.message}`);
