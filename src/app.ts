@@ -3,7 +3,7 @@ import { ensureConfig } from './config.js';
 import { adminRouter } from './admin/routes.js';
 import { upsertConversation, setConversationRGFlag } from './models/conversations.js';
 import { findInboundByTelegramId, insertMessage } from './models/messages.js';
-import { sendMessage, TelegramUpdate } from './telegram.js';
+import { sendMessage, sendChatAction, TelegramUpdate } from './telegram.js';
 import { moderateText, refusalMessage, shouldAddRGFooter } from './utils/moderation.js';
 import { retrieveTopK } from './rag/retrieve.js';
 import { generateReply } from './openai.js';
@@ -62,6 +62,10 @@ export async function handleWebhook(update: TelegramUpdate): Promise<void> {
     const chatId = String(update.message.chat.id);
     const username = update.message.chat.username || update.message.from?.username || null;
     console.log('[handleWebhook] Upserting conversation', { chatId, username });
+    
+    // Send typing indicator immediately
+    await sendChatAction(update.message.chat.id, 'typing').catch(() => {});
+    
     const convo = await upsertConversation('telegram', chatId, username);
     console.log('[handleWebhook] Conversation upserted', { convoId: convo.id });
 
@@ -120,9 +124,15 @@ export async function handleWebhook(update: TelegramUpdate): Promise<void> {
       await setConversationRGFlag(convo.id, true);
     }
 
+    // Keep typing indicator active during processing
+    await sendChatAction(update.message.chat.id, 'typing').catch(() => {});
+
     console.log('[handleWebhook] Retrieving KB chunks for RAG');
     const retrieved = await retrieveTopK(text, 5);
     console.log('[handleWebhook] Retrieved', { count: retrieved.length });
+
+    // Typing indicator again before AI call
+    await sendChatAction(update.message.chat.id, 'typing').catch(() => {});
 
     const rgNote = mod.rgRisk ? 'User may be at risk; be supportive, mention limits/self-exclusion and professional help resources.' : undefined;
 

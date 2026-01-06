@@ -24,3 +24,17 @@ export async function sendMessage(chat_id: number | string, text: string) {
   const data: any = await resp.json();
   return data.result?.message_id as number | undefined;
 }
+export async function sendChatAction(chat_id: number | string, action: string = 'typing') {
+  try {
+    const resp = await fetch(`${BASE}/sendChatAction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id, action }),
+    });
+    if (!resp.ok) {
+      console.warn(`Telegram sendChatAction failed: ${resp.status}`);
+    }
+  } catch (e) {
+    console.warn('sendChatAction error:', e);
+  }
+}
