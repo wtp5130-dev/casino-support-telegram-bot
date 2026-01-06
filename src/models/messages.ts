@@ -25,10 +25,10 @@ export async function insertMessage(params: Omit<Message, 'id' | 'created_at'> &
 
 export async function getMessagesForConversation(conversation_id: number) {
   const res = await sql<Message>`SELECT * FROM messages WHERE conversation_id=${conversation_id} ORDER BY created_at ASC, id ASC`;
-  return res.rows as any as Message[];
+  return (res.rows || []) as any;
 }
 
 export async function findInboundByTelegramId(conversation_id: number, telegram_message_id: string) {
   const res = await sql<Message>`SELECT * FROM messages WHERE conversation_id=${conversation_id} AND direction='in' AND telegram_message_id=${telegram_message_id} LIMIT 1`;
-  return (res.rows[0] as any) as Message | undefined;
+  return (res.rows[0] || undefined) as any;
 }
