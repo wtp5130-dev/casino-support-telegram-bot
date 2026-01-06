@@ -70,6 +70,10 @@ jobs:
             else
               echo "No CLICKUP_WORKSPACE_ID or CLICKUP_DOC_IDS -> skipping Docs API ingestion"
             fi
+            if [ -n "$CLICKUP_DOC_URLS" ]; then
+              echo "Ingesting ClickUp Docs via app URLs (API fallback)"
+              npx tsx src/rag/ingest_clickup_api_from_url.ts || exit 1
+            fi
           fi
           if [ -n "$CLICKUP_DOC_SHARE_URLS" ]; then
             echo "Ingesting ClickUp Docs from public URLs"

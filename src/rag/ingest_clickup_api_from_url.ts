@@ -59,12 +59,22 @@ async function main() {
 
   const urls = urlCsv.split(',').map((s) => s.trim()).filter(Boolean);
   for (const url of urls) {
-    const { docId } = parseDocAndPage(url);
+    const { docId, pageId } = parseDocAndPage(url);
     if (!docId) {
       throw new Error(`Could not parse doc id from URL: ${url}`);
     }
-    // Always ingest the entire doc (all pages)
-    await ingestDoc(token, docId);
+    // Try full doc ingestion first
+    try {
+      await ingestDoc(token, docId);
+    } catch (e: any) {
+      console.warn(`Full doc ingest failed for ${docId}: ${e?.message || e}`);
+      if (pageId) {
+        console.log(`Falling back to single page ingest for page ${pageId}`);
+        await ingestSinglePage(token, pageId, docId);
+      } else {
+        throw e;
+      }
+    }
   }
 }
 
