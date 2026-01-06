@@ -1,5 +1,6 @@
 import serverless from 'serverless-http';
 import { app, init, handleWebhook } from '../src/app.js';
+import auth from 'basic-auth';
 
 const appHandler = serverless(app);
 
@@ -19,6 +20,12 @@ async function readBody(req: any): Promise<any> {
     });
     req.on('error', reject);
   });
+}
+
+// Helper to check admin auth
+function checkAdminAuth(req: any): boolean {
+  const creds = auth(req);
+  return creds && creds.name === process.env.ADMIN_USER && creds.pass === process.env.ADMIN_PASS;
 }
 
 export default async function(req: any, res: any) {
@@ -79,6 +86,23 @@ export default async function(req: any, res: any) {
       } else {
         res.end(JSON.stringify({ ok: true }));
       }
+      return;
+    }
+
+    // Handle public admin endpoints directly (avoid Express routing hangs)
+    if (req?.url?.startsWith('/admin/ping')) {
+      console.log('Handling /admin/ping directly');
+      res.statusCode = 200;
+      res.setHeader('content-type', 'text/plain');
+      res.end('ok');
+      return;
+    }
+
+    if (req?.url?.startsWith('/admin/test')) {
+      console.log('Handling /admin/test directly');
+      res.statusCode = 200;
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ ok: true, message: 'Admin router works' }));
       return;
     }
 
