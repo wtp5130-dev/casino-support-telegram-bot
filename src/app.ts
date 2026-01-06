@@ -26,6 +26,19 @@ app.set('view engine', 'ejs');
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+app.get('/health/env', (_req, res) => {
+  const envStatus = {
+    POSTGRES_URL: !!process.env.POSTGRES_URL,
+    OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+    TELEGRAM_BOT_TOKEN: !!process.env.TELEGRAM_BOT_TOKEN,
+    ADMIN_USER: !!process.env.ADMIN_USER,
+    ADMIN_PASS: !!process.env.ADMIN_PASS,
+    BASE_URL: process.env.BASE_URL || 'not set',
+    NODE_ENV: process.env.NODE_ENV,
+  };
+  res.json(envStatus);
+});
+
 app.get('/', (_req, res) => res.json({ ok: true, service: 'Casino Support Telegram Bot' }));
 
 app.post('/telegram/webhook', async (req, res) => {
