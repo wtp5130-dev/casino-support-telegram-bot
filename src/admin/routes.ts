@@ -8,11 +8,16 @@ export const adminRouter = Router();
 adminRouter.use(requireAdminBasicAuth);
 
 adminRouter.get('/', async (req: Request, res: Response) => {
-  const q = (req.query.q as string) || '';
-  const limit = Number(req.query.limit || 50);
-  const offset = Number(req.query.offset || 0);
-  const { items, total } = await listConversations(limit, offset, q);
-  res.render('conversations', { items, total, q, limit, offset });
+  try {
+    const q = (req.query.q as string) || '';
+    const limit = Number(req.query.limit || 50);
+    const offset = Number(req.query.offset || 0);
+    const { items, total } = await listConversations(limit, offset, q);
+    res.render('conversations', { items, total, q, limit, offset });
+  } catch (err: any) {
+    console.error('Admin GET / error:', err?.message || err);
+    res.status(500).send(`Error: ${err?.message || 'Unknown error'}`);
+  }
 });
 
 adminRouter.get('/conversations/:id', async (req: Request, res: Response) => {

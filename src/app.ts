@@ -8,14 +8,18 @@ import { moderateText, refusalMessage, shouldAddRGFooter } from './utils/moderat
 import { retrieveTopK } from './rag/retrieve.js';
 import { generateReply } from './openai.js';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { ejsLayouts } from './admin/views/_ejsLayoutShim.js';
 import { initSchema } from './db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const app = express();
 app.use(express.json({ limit: '2mb' }));
 
-// Views - in serverless, files are in dist/src/admin/views; locally in src/admin/views
-const viewsPath = process.env.VERCEL ? 'src/admin/views' : path.resolve(process.cwd(), 'src/admin/views');
+// Views - files are deployed relative to the compiled JS location
+const viewsPath = path.join(__dirname, 'admin/views');
 app.set('views', viewsPath);
 app.set('view engine', 'ejs');
 (ejsLayouts as any)(app);

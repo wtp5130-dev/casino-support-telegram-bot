@@ -1,0 +1,9 @@
+.git
+.gitignore
+node_modules
+src/**/*.test.ts
+src/**/*.spec.ts
+tests/
+*.md
+.env.local
+.env.*.local
