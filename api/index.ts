@@ -9,7 +9,7 @@ export default async function(req: any, res: any) {
   console.log('Serverless handler invoked', { path: req?.url, method: req?.method });
   try {
     // Allow health and lightweight diagnostics to respond even if env not fully configured
-    if (req?.url && (req.url.startsWith('/health') || req.url.startsWith('/admin/ping'))) {
+    if (req?.url && (req.url.startsWith('/health') || req.url.startsWith('/admin/ping') || req.url.startsWith('/admin?fast=1'))) {
       console.log('Health check request');
       return appHandler(req, res);
     }

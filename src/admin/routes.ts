@@ -11,6 +11,15 @@ adminRouter.get('/ping', (_req: Request, res: Response) => {
   res.type('text/plain').send('ok');
 });
 
+// Public fast-path responder for diagnostics: /admin?fast=1
+adminRouter.use((req: Request, res: Response, next) => {
+  if (req.path === '/' && (req.query.fast as string) === '1') {
+    res.type('text/html').send('<h1>Admin reachable</h1><p>Route works. Add credentials and remove ?fast=1 to load data.</p>');
+    return;
+  }
+  next();
+});
+
 adminRouter.use(requireAdminBasicAuth);
 
 adminRouter.get('/', async (req: Request, res: Response) => {
