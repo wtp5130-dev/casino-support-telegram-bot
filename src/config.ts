@@ -10,6 +10,8 @@ export type AppConfig = {
   OPENAI_MODEL: string;
   OPENAI_EMBEDDING_MODEL: string;
   POSTGRES_URL: string;
+  CLICKUP_API_TOKEN?: string;
+  CLICKUP_LIST_IDS?: string; // comma-separated
 };
 
 export const config: AppConfig = {
@@ -22,6 +24,8 @@ export const config: AppConfig = {
   OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
   OPENAI_EMBEDDING_MODEL: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-large',
   POSTGRES_URL: process.env.POSTGRES_URL || '',
+  CLICKUP_API_TOKEN: process.env.CLICKUP_API_TOKEN,
+  CLICKUP_LIST_IDS: process.env.CLICKUP_LIST_IDS,
 };
 
 export function ensureConfig() {

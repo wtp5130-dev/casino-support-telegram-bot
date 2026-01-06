@@ -196,6 +196,8 @@ export default async function(req: any, res: any) {
           TELEGRAM_BOT_TOKEN: !!process.env.TELEGRAM_BOT_TOKEN,
           ADMIN_USER: !!process.env.ADMIN_USER,
           ADMIN_PASS: !!process.env.ADMIN_PASS,
+          CLICKUP_API_TOKEN: !!process.env.CLICKUP_API_TOKEN,
+          CLICKUP_LIST_IDS: !!process.env.CLICKUP_LIST_IDS,
           BASE_URL: process.env.BASE_URL || 'not set',
           NODE_ENV: process.env.NODE_ENV,
         }));

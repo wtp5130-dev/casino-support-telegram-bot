@@ -23,8 +23,18 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Ingest
+      - name: Ingest local KB (files)
+        if: ${{ !secrets.CLICKUP_API_TOKEN }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
         run: npx tsx src/rag/ingest.ts
+
+      - name: Ingest ClickUp KB
+        if: ${{ secrets.CLICKUP_API_TOKEN != '' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          CLICKUP_LIST_IDS: ${{ secrets.CLICKUP_LIST_IDS }}
+        run: npx tsx src/rag/ingest_clickup.ts
