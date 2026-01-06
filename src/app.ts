@@ -53,17 +53,22 @@ app.get('/admin', (_req, res) => {
 });
 
 export async function handleWebhook(update: TelegramUpdate): Promise<void> {
+  console.log('[handleWebhook] Processing update');
   try {
     if (!update.message || !update.message.text) {
+      console.log('[handleWebhook] No message text, returning');
       return;
     }
     const chatId = String(update.message.chat.id);
     const username = update.message.chat.username || update.message.from?.username || null;
+    console.log('[handleWebhook] Upserting conversation', { chatId, username });
     const convo = await upsertConversation('telegram', chatId, username);
+    console.log('[handleWebhook] Conversation upserted', { convoId: convo.id });
 
     // Idempotency for inbound messages
     const existingInbound = await findInboundByTelegramId(convo.id, String(update.message.message_id));
     if (!existingInbound) {
+      console.log('[handleWebhook] Inserting inbound message');
       await insertMessage({
         conversation_id: convo.id,
         direction: 'in',
@@ -71,50 +76,68 @@ export async function handleWebhook(update: TelegramUpdate): Promise<void> {
         text: update.message.text,
         telegram_message_id: String(update.message.message_id),
       });
+    } else {
+      console.log('[handleWebhook] Message already exists (idempotency)');
     }
 
     // Commands
     const text = update.message.text.trim();
     if (text === '/start') {
+      console.log('[handleWebhook] Processing /start command');
       const welcome = [
         'Hi! I\'m your Casino Support Assistant. I can help with account access, KYC, deposits/withdrawals, bonus terms, technical issues, responsible gaming tools, and contacting support.',
         'Please avoid asking for betting strategies or exploits — I\'ll have to refuse.',
       ].join('\n');
       const outId = await sendMessage(update.message.chat.id, welcome);
+      console.log('[handleWebhook] Welcome message sent', { outId });
       await insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: welcome, telegram_message_id: String(outId || '') });
       return;
     }
     if (text === '/help') {
+      console.log('[handleWebhook] Processing /help command');
       const help = 'You can ask about account issues, KYC steps, deposits/withdrawals, bonus terms in our policy, troubleshooting, and responsible gaming options (limits/self-exclusion).';
       const outId = await sendMessage(update.message.chat.id, help);
+      console.log('[handleWebhook] Help message sent', { outId });
       await insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: help, telegram_message_id: String(outId || '') });
       return;
     }
 
     // Moderation
+    console.log('[handleWebhook] Running moderation check');
     const mod = moderateText(update.message.text);
     if (mod.disallowed) {
+      console.log('[handleWebhook] Message blocked by moderation', { disallowedTerms: mod.disallowedTerms });
       const reply = refusalMessage();
       const outId = await sendMessage(update.message.chat.id, reply);
+      console.log('[handleWebhook] Refusal sent', { outId });
       await insertMessage({ conversation_id: convo.id, direction: 'out', role: 'assistant', text: reply, telegram_message_id: String(outId || '') });
       if (mod.rgRisk) await setConversationRGFlag(convo.id, true);
       return;
     }
 
-    if (mod.rgRisk) await setConversationRGFlag(convo.id, true);
+    if (mod.rgRisk) {
+      console.log('[handleWebhook] RG risk detected, setting flag');
+      await setConversationRGFlag(convo.id, true);
+    }
 
+    console.log('[handleWebhook] Retrieving KB chunks for RAG');
     const retrieved = await retrieveTopK(text, 5);
+    console.log('[handleWebhook] Retrieved', { count: retrieved.length });
 
     const rgNote = mod.rgRisk ? 'User may be at risk; be supportive, mention limits/self-exclusion and professional help resources.' : undefined;
 
+    console.log('[handleWebhook] Generating OpenAI response');
     const gen = await generateReply({ userText: text, retrieved, rgNote });
+    console.log('[handleWebhook] Response generated', { model: gen.model, tokens: { prompt: gen.prompt_tokens, completion: gen.completion_tokens } });
 
     let answer = gen.text;
     if (shouldAddRGFooter(text, mod.rgRisk)) {
       answer += '\n\nIf you feel gambling is becoming a problem, we can help you set limits or self-exclude.';
     }
 
+    console.log('[handleWebhook] Sending response to Telegram');
     const outMsgId = await sendMessage(update.message.chat.id, answer);
+    console.log('[handleWebhook] Response sent', { outMsgId });
 
     await insertMessage({
       conversation_id: convo.id,
@@ -126,13 +149,18 @@ export async function handleWebhook(update: TelegramUpdate): Promise<void> {
       prompt_tokens: gen.prompt_tokens ?? null,
       completion_tokens: gen.completion_tokens ?? null,
     });
+    console.log('[handleWebhook] Message logged to database');
   } catch (err) {
+    console.error('[handleWebhook] Error:', (err as any)?.message || err, { stack: (err as any)?.stack?.substring(0, 200) });
     const friendly = 'Sorry, something went wrong. Please try again later or contact support.';
     try {
       if (update.message?.chat?.id) {
+        console.log('[handleWebhook] Sending error response');
         await sendMessage(update.message.chat.id, friendly);
       }
-    } catch {}
+    } catch (e) {
+      console.error('[handleWebhook] Failed to send error response:', e);
+    }
   }
 }
 

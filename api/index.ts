@@ -22,28 +22,38 @@ async function readBody(req: any): Promise<any> {
 }
 
 export default async function(req: any, res: any) {
-  console.log('Serverless handler invoked', { path: req?.url, method: req?.method });
+  console.log('Serverless handler invoked', { path: req?.url, method: req?.method, timestamp: new Date().toISOString() });
   try {
     // Handle /telegram/webhook directly with manual body parsing
     if (req?.url?.startsWith('/telegram/webhook') && req?.method === 'POST') {
-      console.log('Handling Telegram webhook directly');
+      console.log('[WEBHOOK] Handling Telegram webhook directly');
       try {
+        console.log('[WEBHOOK] Calling init()');
         await init();
+        console.log('[WEBHOOK] Init complete, reading body');
         const update = await readBody(req);
-        console.log('Webhook update received:', { message_id: update.message?.message_id, text: update.message?.text?.substring(0, 50) });
+        console.log('[WEBHOOK] Body parsed successfully', { 
+          message_id: update.message?.message_id, 
+          chat_id: update.message?.chat?.id,
+          text: update.message?.text?.substring(0, 50) 
+        });
         
-        // Respond immediately to Telegram
+        // Respond immediately to Telegram (important: don't wait for processing)
         res.statusCode = 200;
         res.setHeader('content-type', 'application/json');
         res.end(JSON.stringify({ ok: true }));
+        console.log('[WEBHOOK] Response sent to Telegram');
 
-        // Process async in background (don't await)
+        // Process async in background (don't await, don't block)
         if (update.message && update.message.text) {
-          console.log('Processing message:', update.message.text);
-          handleWebhook(update).catch(e => console.error('Webhook handler error:', e?.message || e));
+          console.log('[WEBHOOK] Spawning async handler for message:', update.message.text);
+          handleWebhook(update).then(
+            () => console.log('[WEBHOOK] Handler completed successfully'),
+            (e: any) => console.error('[WEBHOOK] Handler error:', e?.message || e)
+          );
         }
       } catch (e: any) {
-        console.error('Webhook error:', e?.message || e);
+        console.error('[WEBHOOK] Error reading/parsing body:', e?.message || e, { stack: e?.stack?.substring(0, 200) });
         res.statusCode = 500;
         res.setHeader('content-type', 'application/json');
         res.end(JSON.stringify({ ok: false, error: e?.message }));
