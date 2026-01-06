@@ -22,55 +22,49 @@ jobs:
 
       - name: Diagnostics (env presence)
         env:
-          HAS_OPENAI: ${{ secrets.OPENAI_API_KEY != '' }}
-          HAS_POSTGRES: ${{ secrets.POSTGRES_URL != '' }}
-          HAS_CLICKUP_TOKEN: ${{ secrets.CLICKUP_API_TOKEN != '' }}
-          HAS_CLICKUP_LIST_IDS: ${{ secrets.CLICKUP_LIST_IDS != '' }}
-          HAS_CLICKUP_DOC_IDS: ${{ secrets.CLICKUP_DOC_IDS != '' }}
-          HAS_CLICKUP_WORKSPACE_ID: ${{ secrets.CLICKUP_WORKSPACE_ID != '' }}
-          HAS_CLICKUP_DOC_SHARE_URLS: ${{ secrets.CLICKUP_DOC_SHARE_URLS != '' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          CLICKUP_LIST_IDS: ${{ secrets.CLICKUP_LIST_IDS }}
+          CLICKUP_DOC_IDS: ${{ secrets.CLICKUP_DOC_IDS }}
+          CLICKUP_WORKSPACE_ID: ${{ secrets.CLICKUP_WORKSPACE_ID }}
+          CLICKUP_DOC_SHARE_URLS: ${{ secrets.CLICKUP_DOC_SHARE_URLS }}
         run: |
-          echo "OPENAI_API_KEY: $HAS_OPENAI"
-          echo "POSTGRES_URL: $HAS_POSTGRES"
-          echo "CLICKUP_API_TOKEN: $HAS_CLICKUP_TOKEN"
-          echo "CLICKUP_LIST_IDS: $HAS_CLICKUP_LIST_IDS"
-          echo "CLICKUP_DOC_IDS: $HAS_CLICKUP_DOC_IDS"
-          echo "CLICKUP_WORKSPACE_ID: $HAS_CLICKUP_WORKSPACE_ID"
-          echo "CLICKUP_DOC_SHARE_URLS: $HAS_CLICKUP_DOC_SHARE_URLS"
+          echo "OPENAI_API_KEY: $([ -n \"$OPENAI_API_KEY\" ] && echo true || echo false)"
+          echo "POSTGRES_URL: $([ -n \"$POSTGRES_URL\" ] && echo true || echo false)"
+          echo "CLICKUP_API_TOKEN: $([ -n \"$CLICKUP_API_TOKEN\" ] && echo true || echo false)"
+          echo "CLICKUP_LIST_IDS: $([ -n \"$CLICKUP_LIST_IDS\" ] && echo true || echo false)"
+          echo "CLICKUP_DOC_IDS: $([ -n \"$CLICKUP_DOC_IDS\" ] && echo true || echo false)"
+          echo "CLICKUP_WORKSPACE_ID: $([ -n \"$CLICKUP_WORKSPACE_ID\" ] && echo true || echo false)"
+          echo "CLICKUP_DOC_SHARE_URLS: $([ -n \"$CLICKUP_DOC_SHARE_URLS\" ] && echo true || echo false)"
 
       - name: Install deps
         run: npm ci
 
-      - name: Ingest local KB (files)
-        if: ${{ secrets.CLICKUP_API_TOKEN == '' }}
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
-        run: npx tsx src/rag/ingest.ts
-
-      - name: Ingest ClickUp KB
-        if: ${{ secrets.CLICKUP_API_TOKEN != '' }}
+      - name: Ingest knowledge base
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
           CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
           CLICKUP_LIST_IDS: ${{ secrets.CLICKUP_LIST_IDS }}
-        run: npx tsx src/rag/ingest_clickup.ts
-
-      - name: Ingest ClickUp Docs via API
-        if: ${{ secrets.CLICKUP_API_TOKEN != '' && (secrets.CLICKUP_WORKSPACE_ID != '' || secrets.CLICKUP_DOC_IDS != '') }}
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
-          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
           CLICKUP_WORKSPACE_ID: ${{ secrets.CLICKUP_WORKSPACE_ID }}
           CLICKUP_DOC_IDS: ${{ secrets.CLICKUP_DOC_IDS }}
-        run: npx tsx src/rag/ingest_clickup_api_docs.ts
-
-      - name: Ingest ClickUp Docs (public URLs)
-        if: ${{ secrets.CLICKUP_DOC_SHARE_URLS != '' }}
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
           CLICKUP_DOC_SHARE_URLS: ${{ secrets.CLICKUP_DOC_SHARE_URLS }}
-        run: npx tsx src/rag/ingest_clickup_docs.ts
+        run: |
+          set -e
+          echo "Starting KB ingestion orchestrator..."
+          if [ -z "$CLICKUP_API_TOKEN" ]; then
+            echo "No CLICKUP_API_TOKEN found -> ingesting local KB files"
+            npx tsx src/rag/ingest.ts
+          else
+            echo "CLICKUP_API_TOKEN present -> ingesting ClickUp tasks (lists)"
+            npx tsx src/rag/ingest_clickup.ts || exit 1
+            if [ -n "$CLICKUP_WORKSPACE_ID" ] || [ -n "$CLICKUP_DOC_IDS" ]; then
+              echo "Ingesting ClickUp Docs via API"
+              npx tsx src/rag/ingest_clickup_api_docs.ts || exit 1
+            fi
+          fi
+          if [ -n "$CLICKUP_DOC_SHARE_URLS" ]; then
+            echo "Ingesting ClickUp Docs from public URLs"
+            npx tsx src/rag/ingest_clickup_docs.ts || exit 1
+          fi
