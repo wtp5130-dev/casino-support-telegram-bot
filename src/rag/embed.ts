@@ -9,7 +9,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
     model: config.OPENAI_EMBEDDING_MODEL,
     input: texts,
   });
-  return resp.data.map((d) => d.embedding as unknown as number[]);
+  return resp.data.map((d) => (d.embedding || []) as any);
 }
 
 export async function embedText(text: string): Promise<number[]> {
