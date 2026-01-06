@@ -1,4 +1,6 @@
 import serverless from 'serverless-http';
+// After tsc compiles, both api and src go to dist/
+// So from dist/api/index.js, ../src/app.js is actually dist/src/app.js
 import { app, init } from '../src/app.js';
 
 const appHandler = serverless(app);
