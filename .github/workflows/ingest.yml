@@ -20,6 +20,24 @@ jobs:
         with:
           node-version: 20
 
+      - name: Diagnostics (env presence)
+        env:
+          HAS_OPENAI: ${{ secrets.OPENAI_API_KEY != '' }}
+          HAS_POSTGRES: ${{ secrets.POSTGRES_URL != '' }}
+          HAS_CLICKUP_TOKEN: ${{ secrets.CLICKUP_API_TOKEN != '' }}
+          HAS_CLICKUP_LIST_IDS: ${{ secrets.CLICKUP_LIST_IDS != '' }}
+          HAS_CLICKUP_DOC_IDS: ${{ secrets.CLICKUP_DOC_IDS != '' }}
+          HAS_CLICKUP_WORKSPACE_ID: ${{ secrets.CLICKUP_WORKSPACE_ID != '' }}
+          HAS_CLICKUP_DOC_SHARE_URLS: ${{ secrets.CLICKUP_DOC_SHARE_URLS != '' }}
+        run: |
+          echo "OPENAI_API_KEY: $HAS_OPENAI"
+          echo "POSTGRES_URL: $HAS_POSTGRES"
+          echo "CLICKUP_API_TOKEN: $HAS_CLICKUP_TOKEN"
+          echo "CLICKUP_LIST_IDS: $HAS_CLICKUP_LIST_IDS"
+          echo "CLICKUP_DOC_IDS: $HAS_CLICKUP_DOC_IDS"
+          echo "CLICKUP_WORKSPACE_ID: $HAS_CLICKUP_WORKSPACE_ID"
+          echo "CLICKUP_DOC_SHARE_URLS: $HAS_CLICKUP_DOC_SHARE_URLS"
+
       - name: Install deps
         run: npm ci
 
