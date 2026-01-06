@@ -17,7 +17,7 @@ export function ejsLayouts(app) {
           res.send(html);
         });
       });
-    } as any;
+    };
     next();
   });
 }
