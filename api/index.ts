@@ -3,6 +3,7 @@ import { app, init, handleWebhook } from '../src/app.js';
 import auth from 'basic-auth';
 import { listConversations, getConversation } from '../src/models/conversations.js';
 import { getMessagesForConversation } from '../src/models/messages.js';
+import { countKBChunks } from '../src/rag/store.js';
 
 const appHandler = serverless(app);
 
@@ -204,6 +205,15 @@ export default async function(req: any, res: any) {
           BASE_URL: process.env.BASE_URL || 'not set',
           NODE_ENV: process.env.NODE_ENV,
         }));
+      } else if (urlPath === '/health/kb') {
+        try {
+          await init();
+          const count = await countKBChunks();
+          res.end(JSON.stringify({ ok: true, kb_chunks: count }));
+        } catch (e: any) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ ok: false, error: e?.message }));
+        }
       } else {
         res.end(JSON.stringify({ ok: true }));
       }

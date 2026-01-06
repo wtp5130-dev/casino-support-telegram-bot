@@ -44,3 +44,9 @@ export async function searchKBByEmbedding(queryEmbedding: number[], topK = 5) {
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, topK);
 }
+
+export async function countKBChunks(): Promise<number> {
+  const res: any = await sql`SELECT COUNT(*)::int AS c FROM kb_chunks`;
+  const first = Array.isArray(res) ? res[0] : undefined;
+  return Number(first?.c || 0);
+}
