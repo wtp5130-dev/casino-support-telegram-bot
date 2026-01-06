@@ -1,6 +1,7 @@
 import { app, init } from './app.js';
-import { config } from './config.js';
+import { config, ensureConfig } from './config.js';
 
+ensureConfig();
 init().then(() => {
   app.listen(config.PORT, () => {
     // eslint-disable-next-line no-console

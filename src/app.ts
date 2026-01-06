@@ -1,5 +1,5 @@
 import express from 'express';
-import { config } from './config.js';
+import { ensureConfig } from './config.js';
 import { adminRouter } from './admin/routes.js';
 import { upsertConversation, setConversationRGFlag } from './models/conversations.js';
 import { findInboundByTelegramId, insertMessage } from './models/messages.js';
@@ -112,5 +112,7 @@ app.post('/telegram/webhook', async (req, res) => {
 app.use('/admin', adminRouter);
 
 export async function init() {
+  // Validate env only when initializing the app (serverless-safe)
+  ensureConfig();
   await initSchema();
 }
