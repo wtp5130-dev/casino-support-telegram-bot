@@ -8,6 +8,23 @@ const appHandler = serverless(app);
 export default async function(req: any, res: any) {
   console.log('Serverless handler invoked', { path: req?.url, method: req?.method });
   try {
+    // Handle /telegram/webhook directly without full Express init
+    if (req?.url?.startsWith('/telegram/webhook') && req?.method === 'POST') {
+      console.log('Handling Telegram webhook directly');
+      try {
+        await init();
+        console.log('Init complete for webhook');
+      } catch (e: any) {
+        console.error('Init error for webhook:', e?.message);
+        res.statusCode = 503;
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ ok: false, error: 'Init failed' }));
+        return;
+      }
+      // Pass through to Express handler
+      return appHandler(req, res);
+    }
+
     // Handle /health endpoints directly without going through Express
     if (req?.url?.startsWith('/health')) {
       console.log('Handling /health directly');
