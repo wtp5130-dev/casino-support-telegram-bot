@@ -29,10 +29,11 @@ function checkAdminAuth(req: any): boolean {
 }
 
 export default async function(req: any, res: any) {
-  console.log('Serverless handler invoked', { path: req?.url, method: req?.method, timestamp: new Date().toISOString() });
+  const urlPath = req?.url?.split('?')[0]; // Remove query string
+  console.log('Serverless handler invoked', { path: urlPath, method: req?.method, timestamp: new Date().toISOString() });
   try {
     // Handle /telegram/webhook directly with manual body parsing
-    if (req?.url?.startsWith('/telegram/webhook') && req?.method === 'POST') {
+    if (urlPath?.startsWith('/telegram/webhook') && req?.method === 'POST') {
       console.log('[WEBHOOK] Handling Telegram webhook directly');
       try {
         console.log('[WEBHOOK] Calling init()');
@@ -69,11 +70,11 @@ export default async function(req: any, res: any) {
     }
 
     // Handle /health endpoints directly without going through Express
-    if (req?.url?.startsWith('/health')) {
+    if (urlPath?.startsWith('/health')) {
       console.log('Handling /health directly');
       res.statusCode = 200;
       res.setHeader('content-type', 'application/json');
-      if (req.url === '/health/env') {
+      if (urlPath === '/health/env') {
         res.end(JSON.stringify({
           POSTGRES_URL: !!process.env.POSTGRES_URL,
           OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
@@ -90,7 +91,7 @@ export default async function(req: any, res: any) {
     }
 
     // Handle public admin endpoints directly (avoid Express routing hangs)
-    if (req?.url?.startsWith('/admin/ping')) {
+    if (urlPath?.startsWith('/admin/ping')) {
       console.log('Handling /admin/ping directly');
       res.statusCode = 200;
       res.setHeader('content-type', 'text/plain');
@@ -98,7 +99,7 @@ export default async function(req: any, res: any) {
       return;
     }
 
-    if (req?.url?.startsWith('/admin/test')) {
+    if (urlPath?.startsWith('/admin/test')) {
       console.log('Handling /admin/test directly');
       res.statusCode = 200;
       res.setHeader('content-type', 'application/json');
@@ -106,7 +107,7 @@ export default async function(req: any, res: any) {
       return;
     }
 
-    console.log('Initializing app for:', req?.url);
+    console.log('Initializing app for:', urlPath);
     try {
       const initTimeout = new Promise((_resolve, reject) => setTimeout(() => reject(new Error('Init timeout')), 4000));
       await Promise.race([init(), initTimeout]);
