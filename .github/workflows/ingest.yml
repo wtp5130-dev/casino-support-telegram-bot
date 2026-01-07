@@ -2,7 +2,7 @@ name: Ingest KB
 
 on:
   schedule:
-    - cron: "0 3 * * *" # every day at 03:00 UTC
+    - cron: "0 19 * * *" # daily at 19:00 UTC (03:00 GMT+8)
   workflow_dispatch:
     inputs:
       note:
