@@ -18,7 +18,7 @@ export async function generateReply(params: {
   rgNote?: string;
 }) {
   const { userText, retrieved, rgNote } = params;
-  const refs = retrieved.map((r) => `- [source: ${r.source}#${r.chunk_index}] ${r.text}`).join('\n');
+  const refs = retrieved.map((r) => `- ${r.text}`).join('\n');
   const referenceContext = refs ? `Reference context (from KB):\n${refs}` : 'No KB context matched.';
 
   const system = SYSTEM_POLICY + (rgNote ? `\nResponsible gaming note: ${rgNote}` : '');
@@ -39,7 +39,7 @@ export async function generateReply(params: {
           'Instructions:',
           '- Use KB as source of truth for policy/terms.',
           '- If unsure or missing info in KB, ask for clarifications or provide general guidance without making policy claims.',
-          '- Include sources inline like [source: filename#chunk_index].',
+          '- Do not include citations or source tags in the reply.',
           '- Keep responses concise, professional, and supportive.',
         ].join('\n'),
       },
@@ -47,10 +47,7 @@ export async function generateReply(params: {
   });
 
   let text = completion.choices[0]?.message?.content ?? '';
-  if (retrieved.length) {
-    const sources = retrieved.map((r) => `[source: ${r.source}#${r.chunk_index}]`).join(' ');
-    text += `\n\nSources: ${sources}`;
-  }
+  // Do not append sources to the user-visible reply.
   const usage = completion.usage;
   const model = completion.model;
   return {
