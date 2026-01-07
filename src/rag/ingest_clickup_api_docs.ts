@@ -67,7 +67,19 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error('ClickUp API Docs ingest error', err);
-  process.exit(1);
-});
+// Only run main when this file is executed directly (not when imported)
+const invokedAsEntry = (() => {
+  try {
+    const arg1 = process.argv[1] || '';
+    return /ingest_clickup_api_docs\.(ts|js)$/.test(arg1);
+  } catch {
+    return false;
+  }
+})();
+
+if (invokedAsEntry) {
+  main().catch((err) => {
+    console.error('ClickUp API Docs ingest error', err);
+    process.exit(1);
+  });
+}
