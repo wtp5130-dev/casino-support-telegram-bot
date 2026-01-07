@@ -1,6 +1,8 @@
 name: Ingest KB
 
 on:
+  schedule:
+    - cron: "0 3 * * *" # every day at 03:00 UTC
   workflow_dispatch:
     inputs:
       note:
@@ -10,6 +12,9 @@ on:
 
 jobs:
   ingest:
+    concurrency:
+      group: ingest-kb
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
