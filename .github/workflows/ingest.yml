@@ -28,6 +28,7 @@ jobs:
           CLICKUP_LIST_IDS: ${{ secrets.CLICKUP_LIST_IDS }}
           CLICKUP_DOC_IDS: ${{ secrets.CLICKUP_DOC_IDS }}
           CLICKUP_WORKSPACE_ID: ${{ secrets.CLICKUP_WORKSPACE_ID }}
+          CLICKUP_DOC_URLS: ${{ secrets.CLICKUP_DOC_URLS }}
           CLICKUP_DOC_SHARE_URLS: ${{ secrets.CLICKUP_DOC_SHARE_URLS }}
         run: |
           echo "OPENAI_API_KEY: $([ -n \"$OPENAI_API_KEY\" ] && echo true || echo false)"
@@ -36,6 +37,7 @@ jobs:
           echo "CLICKUP_LIST_IDS: $([ -n \"$CLICKUP_LIST_IDS\" ] && echo true || echo false)"
           echo "CLICKUP_DOC_IDS: $([ -n \"$CLICKUP_DOC_IDS\" ] && echo true || echo false)"
           echo "CLICKUP_WORKSPACE_ID: $([ -n \"$CLICKUP_WORKSPACE_ID\" ] && echo true || echo false)"
+          echo "CLICKUP_DOC_URLS: $([ -n \"$CLICKUP_DOC_URLS\" ] && echo true || echo false)"
           echo "CLICKUP_DOC_SHARE_URLS: $([ -n \"$CLICKUP_DOC_SHARE_URLS\" ] && echo true || echo false)"
 
       - name: Install deps
@@ -49,6 +51,7 @@ jobs:
           CLICKUP_LIST_IDS: ${{ secrets.CLICKUP_LIST_IDS }}
           CLICKUP_WORKSPACE_ID: ${{ secrets.CLICKUP_WORKSPACE_ID }}
           CLICKUP_DOC_IDS: ${{ secrets.CLICKUP_DOC_IDS }}
+          CLICKUP_DOC_URLS: ${{ secrets.CLICKUP_DOC_URLS }}
           CLICKUP_DOC_SHARE_URLS: ${{ secrets.CLICKUP_DOC_SHARE_URLS }}
         run: |
           set -e
